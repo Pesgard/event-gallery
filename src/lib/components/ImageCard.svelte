@@ -1,46 +1,35 @@
 <script lang="ts">
   import { Heart, Share, Download, Eye, Calendar } from '@lucide/svelte';
+  import type { ImageWithStats } from '$lib/types';
   
-  export let image: {
-    id: string;
-    url: string;
-    title?: string;
-    description?: string;
-    author?: string;
-    date?: string;
-    eventId?: string;
-    eventName?: string;
-    likes?: number;
+  export let image: ImageWithStats & { 
+    user?: { username: string; fullName: string | null; avatarUrl: string | null };
+    event?: { name: string };
     isLiked?: boolean;
   };
 
   export let showEventInfo = false;
   export let showActions = true;
 
-  function handleLike() {
-    image.isLiked = !image.isLiked;
-    image.likes = image.isLiked ? (image.likes || 0) + 1 : (image.likes || 0) - 1;
-  }
-
   function handleShare() {
-    // Placeholder for share functionality
-    alert('Compartir imagen (funcionalidad pendiente)');
+    navigator.clipboard.writeText(`${window.location.origin}/image/${image.id}`);
+    alert('Enlace de la imagen copiado al portapapeles');
   }
 
   function handleDownload() {
-    // Placeholder for download functionality
-    alert('Descargar imagen (funcionalidad pendiente)');
+    window.open(image.imageUrl, '_blank');
   }
 </script>
 
 <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
   <figure class="aspect-square overflow-hidden">
-    <img 
-      src={image.url} 
-      alt={image.title || 'Imagen de galería'}
-      class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
-      onclick={() => window.location.href = `/image/${image.id}`}
-    />
+    <a href="/image/{image.id}" class="block w-full h-full">
+      <img 
+        src={image.thumbnailUrl || image.imageUrl} 
+        alt={image.title || 'Imagen de galería'}
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+      />
+    </a>
   </figure>
   
   <div class="card-body p-4">
@@ -54,38 +43,35 @@
 
     <div class="flex justify-between items-center text-sm text-base-content/60 mt-2">
       <div class="flex items-center gap-2">
-        {#if image.author}
-          <div class="avatar avatar-xs">
-            <div class="w-6 h-6 rounded-full">
-              <img src="https://picsum.photos/24/24?random={image.author}" alt={image.author} />
+        {#if image.user}
+          {#if image.user.avatarUrl}
+            <div class="avatar avatar-xs">
+              <div class="w-6 h-6 rounded-full">
+                <img src={image.user.avatarUrl} alt={image.user.username} />
+              </div>
             </div>
-          </div>
-          <span>{image.author}</span>
+          {/if}
+          <span>{image.user.fullName || image.user.username}</span>
         {/if}
       </div>
       
-      {#if image.date}
-        <span>{new Date(image.date).toLocaleDateString()}</span>
-      {/if}
+      <span>{new Date(image.uploadedAt).toLocaleDateString()}</span>
     </div>
 
-    {#if showEventInfo && image.eventName}
+    {#if showEventInfo && image.event}
       <div class="badge badge-primary badge-sm mt-2">
         <Calendar size={12} class="mr-1" />
-        {image.eventName}
+        {image.event.name}
       </div>
     {/if}
 
     {#if showActions}
       <div class="card-actions justify-between items-center mt-3">
         <div class="flex items-center gap-2">
-          <button 
-            class="btn btn-ghost btn-sm {image.isLiked ? 'text-error' : ''}"
-            onclick={handleLike}
-          >
+          <div class="btn btn-ghost btn-sm {image.isLiked ? 'text-error' : ''}">
             <Heart size={16} fill={image.isLiked ? 'currentColor' : 'none'} />
-            <span class="text-xs">{image.likes || 0}</span>
-          </button>
+            <span class="text-xs">{image.likeCount || 0}</span>
+          </div>
         </div>
         
         <div class="flex gap-1">

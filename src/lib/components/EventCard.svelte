@@ -1,28 +1,10 @@
 <script lang="ts">
   import { Calendar, MapPin, Users, Camera, Share, ExternalLink } from '@lucide/svelte';
+  import type { EventWithStats } from '$lib/types';
   
-  export let event: {
-    id: string;
-    name: string;
-    description?: string;
-    date: string;
-    location?: string;
-    coverImage?: string;
-    participantCount?: number;
-    imageCount?: number;
-    isJoined?: boolean;
-    createdBy?: string;
-  };
-
-  function handleJoinEvent() {
-    event.isJoined = !event.isJoined;
-    event.participantCount = event.isJoined 
-      ? (event.participantCount || 0) + 1 
-      : Math.max(0, (event.participantCount || 0) - 1);
-  }
+  export let event: EventWithStats & { isJoined?: boolean; creator?: { username: string; fullName: string | null; avatarUrl: string | null } };
 
   function handleShareEvent() {
-    // Placeholder for share event functionality
     navigator.clipboard.writeText(`${window.location.origin}/events/${event.id}`);
     alert('Enlace del evento copiado al portapapeles');
   }
@@ -31,7 +13,7 @@
 <div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow duration-300">
   <figure class="aspect-video overflow-hidden">
     <img 
-      src={event.coverImage || `https://picsum.photos/400/225?random=${event.id}`}
+      src={event.coverImageUrl || `https://picsum.photos/400/225?random=${event.id}`}
       alt={event.name}
       class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
     />
@@ -77,27 +59,23 @@
         </div>
       </div>
 
-      {#if event.createdBy}
+      {#if event.creator}
         <div class="flex items-center gap-2 text-sm text-base-content/60">
-          <div class="avatar avatar-xs">
-            <div class="w-5 h-5 rounded-full">
-              <img src="https://picsum.photos/20/20?random={event.createdBy}" alt={event.createdBy} />
+          {#if event.creator.avatarUrl}
+            <div class="avatar avatar-xs">
+              <div class="w-5 h-5 rounded-full">
+                <img src={event.creator.avatarUrl} alt={event.creator.username} />
+              </div>
             </div>
-          </div>
-          <span>Creado por {event.createdBy}</span>
+          {/if}
+          <span>Creado por {event.creator.fullName || event.creator.username}</span>
         </div>
       {/if}
     </div>
 
     <div class="card-actions justify-between mt-4">
       <div class="flex gap-2">
-        <button 
-          class="btn btn-sm {event.isJoined ? 'btn-outline' : 'btn-primary'}"
-          onclick={handleJoinEvent}
-        >
-          {event.isJoined ? 'Salir' : 'Unirse'}
-        </button>
-        <a href="/events/{event.id}" class="btn btn-ghost btn-sm">
+        <a href="/events/{event.id}" class="btn btn-primary btn-sm">
           <ExternalLink size={16} class="mr-1" />
           Ver Galería
         </a>

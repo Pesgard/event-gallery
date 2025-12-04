@@ -1,26 +1,13 @@
+// ==========================================
+// HOOKS SERVER - SPA MODE
+// ==========================================
+// In SPA mode, we don't need server-side hooks since
+// all authentication is handled client-side with Bearer tokens
+// ==========================================
+
 import type { Handle } from '@sveltejs/kit';
-import * as auth from '$lib/server/auth';
 
-const handleAuth: Handle = async ({ event, resolve }) => {
-	const sessionToken = event.cookies.get(auth.sessionCookieName);
-
-	if (!sessionToken) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
-
-	const { session, user } = await auth.validateSessionToken(sessionToken);
-
-	if (session) {
-		auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
-	} else {
-		auth.deleteSessionTokenCookie(event);
-	}
-
-	event.locals.user = user;
-	event.locals.session = session;
+// Empty handle - no server-side processing needed for SPA
+export const handle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
-
-export const handle: Handle = handleAuth;

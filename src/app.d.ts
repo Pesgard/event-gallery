@@ -1,15 +1,17 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
+// 
+// Note: In SPA mode, we don't use server-side Locals
+// Authentication is handled client-side with Bearer tokens
 declare global {
 	namespace App {
-		interface Locals {
-			user: import('$lib/server/auth').SessionValidationResult['user'];
-			session: import('$lib/server/auth').SessionValidationResult['session'];
-		}
-	} // interface Error {}
-	// interface Locals {}
-} // interface PageData {}
-// interface PageState {}
+		// Locals are not used in SPA mode
+		// interface Locals {}
+		// interface Error {}
+		// interface PageData {}
+		// interface PageState {}
+		// interface Platform {}
+	}
+}
 
-// interface Platform {}
 export {};

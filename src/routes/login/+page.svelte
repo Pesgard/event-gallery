@@ -1,21 +1,47 @@
 <script lang="ts">
   import { Camera, Mail, Lock, Eye, EyeOff } from '@lucide/svelte';
+  import { login, register, isLoading } from '$lib/stores/auth';
+  import { goto } from '$app/navigation';
   
-  let email = '';
-  let password = '';
-  let isRegistering = false;
-  let rememberMe = false;
-  let showPassword = false;
+  let email = $state('');
+  let password = $state('');
+  let username = $state('');
+  let fullName = $state('');
+  let isRegistering = $state(false);
+  let showPassword = $state(false);
+  let errorMessage = $state('');
+  let loading = $state(false);
 
-  function handleSubmit() {
-    if (isRegistering) {
-      // Placeholder for registration logic
-      console.log('Registering:', { email, password });
-      alert('Registro exitoso (funcionalidad pendiente)');
-    } else {
-      // Placeholder for login logic
-      console.log('Logging in:', { email, password, rememberMe });
-      alert('Inicio de sesión exitoso (funcionalidad pendiente)');
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    errorMessage = '';
+    loading = true;
+
+    try {
+      if (isRegistering) {
+        if (!username.trim()) {
+          errorMessage = 'El nombre de usuario es requerido';
+          loading = false;
+          return;
+        }
+        const result = await register(email, username, password, fullName || undefined);
+        if (result.success) {
+          goto('/');
+        } else {
+          errorMessage = result.error?.message || 'Error al registrar';
+        }
+      } else {
+        const result = await login(email, password);
+        if (result.success) {
+          goto('/');
+        } else {
+          errorMessage = result.error?.message || 'Error al iniciar sesión';
+        }
+      }
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : 'Error inesperado';
+    } finally {
+      loading = false;
     }
   }
 
@@ -54,6 +80,15 @@
     <!-- Formulario principal -->
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
+        {#if errorMessage}
+          <div class="alert alert-error mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{errorMessage}</span>
+          </div>
+        {/if}
+
         <form onsubmit={handleSubmit} class="space-y-6">
           <div>
             <label for="email" class="label">
@@ -66,21 +101,67 @@
               class="input input-bordered w-full" 
               placeholder="tu@email.com"
               bind:value={email}
+              disabled={loading}
             />
           </div>
+
+          {#if isRegistering}
+            <div>
+              <label for="username" class="label">
+                <span class="label-text">Nombre de usuario</span>
+              </label>
+              <input 
+                id="username"
+                type="text" 
+                required
+                class="input input-bordered w-full" 
+                placeholder="usuario123"
+                bind:value={username}
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label for="fullName" class="label">
+                <span class="label-text">Nombre completo (opcional)</span>
+              </label>
+              <input 
+                id="fullName"
+                type="text" 
+                class="input input-bordered w-full" 
+                placeholder="Juan Pérez"
+                bind:value={fullName}
+                disabled={loading}
+              />
+            </div>
+          {/if}
 
           <div>
             <label for="password" class="label">
               <span class="label-text">Contraseña</span>
             </label>
-            <input 
-              id="password"
-              type="password" 
-              required
-              class="input input-bordered w-full" 
-              placeholder="••••••••"
-              bind:value={password}
-            />
+            <div class="relative">
+              <input 
+                id="password"
+                type={showPassword ? 'text' : 'password'} 
+                required
+                class="input input-bordered w-full pr-10" 
+                placeholder="••••••••"
+                bind:value={password}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-square"
+                onclick={togglePasswordVisibility}
+              >
+                {#if showPassword}
+                  <EyeOff size={16} />
+                {:else}
+                  <Eye size={16} />
+                {/if}
+              </button>
+            </div>
             {#if !isRegistering}
               <span class="label">
                 <a href="/forgot-password" class="label-text-alt link link-hover">
@@ -90,20 +171,10 @@
             {/if}
           </div>
 
-          {#if !isRegistering}
-            <div class="form-control">
-              <label class="label cursor-pointer justify-start gap-3">
-                <input 
-                  type="checkbox" 
-                  class="checkbox checkbox-sm" 
-                  bind:checked={rememberMe}
-                />
-                <span class="label-text">Recordarme</span>
-              </label>
-            </div>
-          {/if}
-
-          <button type="submit" class="btn btn-primary w-full">
+          <button type="submit" class="btn btn-primary w-full" disabled={loading}>
+            {#if loading}
+              <span class="loading loading-spinner loading-sm"></span>
+            {/if}
             {isRegistering ? 'Crear cuenta' : 'Iniciar sesión'}
           </button>
         </form>
